@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, g
+from flask import Flask, render_template, request, redirect, url_for, g, make_response
 import sqlite3
 from pathlib import Path
 
@@ -83,6 +83,7 @@ def search():
 
     return render_template('index.html', clients=clients)
 
+# 🚀 ROTA PARA EDITAR CLIENTES
 @app.route('/edit/<int:client_id>', methods=['GET', 'POST'])
 def edit(client_id):
     conn = get_db_conn()
@@ -105,6 +106,21 @@ def edit(client_id):
             return redirect(url_for('index'))
 
     return render_template('edit_client.html', client=client)
+
+@app.route('/export')
+def export_csv():
+    conn = get_db_conn()
+    clients = conn.execute('SELECT * FROM clients ORDER BY id').fetchall()
+
+    csv_lines = ["id,name,email,phone\n"]
+    for c in clients:
+        csv_lines.append(f"{c['id']},{c['name']},{c['email']},{c['phone']}\n")
+
+    response = make_response("".join(csv_lines))
+    response.headers["Content-Disposition"] = "attachment; filename=clients_export.csv"
+    response.headers["Content-Type"] = "text/csv"
+
+    return response
 
 @app.route('/count')
 def count_clients():

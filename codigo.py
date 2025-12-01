@@ -77,11 +77,34 @@ def search():
             SELECT * FROM clients
             WHERE name LIKE ? OR email LIKE ? OR phone LIKE ?
             ORDER BY id DESC
-            "",
+            """,
             (f"%{query}%", f"%{query}%", f"%{query}%")
         ).fetchall()
 
     return render_template('index.html', clients=clients)
+
+@app.route('/edit/<int:client_id>', methods=['GET', 'POST'])
+def edit(client_id):
+    conn = get_db_conn()
+    client = conn.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+
+    if client is None:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        if name:
+            conn.execute(
+                'UPDATE clients SET name = ?, email = ?, phone = ? WHERE id = ?',
+                (name, email, phone, client_id)
+            )
+            conn.commit()
+            return redirect(url_for('index'))
+
+    return render_template('edit_client.html', client=client)
 
 @app.route('/count')
 def count_clients():
